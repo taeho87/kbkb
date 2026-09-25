@@ -26,19 +26,26 @@
     #transfer-home { left: 75%; top: 7%; width: 11%; height: 6%; }
     .transactions-art { position: relative; width: 100%; aspect-ratio: 1001 / 1538; overflow: hidden; }
     .transactions-art img { position: absolute; inset: 0; }
-    .list-header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: min(100%, 480px); z-index: 2; display: none; align-items: center; justify-content: space-between; height: 62px; padding: 0 6%; background: #fff; border-bottom: 1px solid #e6e9eb; font-size: 18px; color: #292b2e; }
+    #balance-toggle { left: 82.8%; top: 84.5%; width: 11.8%; height: 3.7%; border-radius: 100px; background: #fff; }
+    #balance-toggle::before { content: ''; display: block; position: absolute; inset: 12% 2%; border-radius: 100px; background: #806f5d; }
+    #balance-toggle::after { content: ''; display: block; position: absolute; top: 2%; right: 1%; width: 52%; height: 96%; border-radius: 50%; background: #fff; border: 1px solid #806f5d; box-shadow: 0 1px 3px #0003; }
+    #balance-toggle[aria-checked="false"]::before { background: #c5c9cc; }
+    #balance-toggle[aria-checked="false"]::after { right: auto; left: 1%; border-color: #aeb3b6; }
+    .balances-hidden .entry-balance { visibility: hidden; }
+    .list-header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: min(100%, 480px); z-index: 2; display: none; align-items: center; justify-content: space-between; height: 62px; padding: 0 6%; background: #fff; border-bottom: 1px solid #e6e9eb; font-size: 16px; color: #292b2e; }
     .list-header.visible { display: flex; }
     .list-header button { border: 0; background: none; padding: 8px 5px; font: inherit; color: inherit; }
-    .list-header .icons { font-size: 24px; letter-spacing: 8px; white-space: nowrap; }
+    .list-header .icons { font-size: 22px; letter-spacing: 8px; white-space: nowrap; }
     .entries { padding: 0 6%; background: #fff; }
-    .month-heading { margin: 0; padding: 22px 0 14px; border-top: 2px solid #6c737a; border-bottom: 1px solid #e6e9eb; font-size: 20px; color: #292b2e; }
+    .month-heading { margin: 0; padding: 22px 0 14px; border-top: 2px solid #6c737a; border-bottom: 1px solid #e6e9eb; font-size: 18px; color: #292b2e; }
     .entry { min-height: 170px; padding: 25px 0 21px; border-bottom: 1px solid #e6e9eb; color: #292b2e; }
-    .entry-meta { color: #747a82; font-size: 15px; white-space: nowrap; }
+    .entry-meta { color: #747a82; font-size: 13px; white-space: nowrap; }
     .entry-meta .divider { color: #d7dce0; padding: 0 5px; }
-    .entry-name { display: block; margin-top: 17px; font-size: 19px; font-weight: 600; }
-    .entry-amount { display: block; margin-top: 14px; text-align: right; font-size: 19px; font-weight: 600; }
+    .entry-name { display: block; margin-top: 17px; font-size: 17px; font-weight: 600; }
+    .entry-amount { display: block; margin-top: 14px; text-align: right; font-size: 17px; font-weight: 600; }
     .entry-amount.deposit { color: #287ff3; }
-    .entry-balance { display: block; margin-top: 4px; text-align: right; color: #777e87; font-size: 16px; }
+    .entry-balance { display: block; margin-top: 4px; text-align: right; color: #777e87; font-size: 14px; }
+    .reconstruction-note { margin: 0; padding: 12px 6%; background: #fff8dd; color: #625219; font-size: 12px; }
     .screen[hidden] { display: none !important; }
     @media (min-width: 481px) { main { box-shadow: 0 0 30px #0002; } }
   </style>
@@ -54,8 +61,10 @@
       <div class="transactions-art">
         <img src="assets/transactions.png" alt="거래내역조회 계좌와 잔액, 조회 설정" draggable="false">
         <button class="hotspot" id="back-home" type="button" aria-label="첫 화면으로 돌아가기"></button>
+        <button class="hotspot" id="balance-toggle" type="button" role="switch" aria-label="거래별 잔액표기" aria-checked="true"></button>
       </div>
       <div class="list-header"><button id="list-back" type="button" aria-label="첫 화면으로">〈</button><span>거래내역조회</span><span class="icons" aria-hidden="true">⌂ ☰</span></div>
+      <p class="reconstruction-note">편집된 개인 기록 · 원본 증빙 아님</p>
       <div class="entries" id="entries" aria-label="거래 내역 목록"></div>
     </section>
     <section class="screen" id="transfer-screen" aria-label="이체 화면" hidden>
@@ -85,6 +94,12 @@
     document.getElementById('transfer-back').onclick = () => showScreen('home');
     document.getElementById('transfer-home').onclick = () => showScreen('home');
     document.getElementById('list-back').onclick = () => showScreen('home');
+    const balanceToggle = document.getElementById('balance-toggle');
+    balanceToggle.onclick = () => {
+      const visible = balanceToggle.getAttribute('aria-checked') !== 'true';
+      balanceToggle.setAttribute('aria-checked', String(visible));
+      screens.transactions.classList.toggle('balances-hidden', !visible);
+    };
     function updateStickyHeader() {
       const screen = screens.transactions;
       const pastTop = screen.getBoundingClientRect().top < -screen.querySelector('.transactions-art').clientHeight + 62;
