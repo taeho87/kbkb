@@ -69,7 +69,8 @@
         <h2 id="editor-title">거래내역 입력</h2>
         <p>저장한 내역은 이 기기의 브라우저에 보관됩니다.</p>
         <form id="entry-form">
-          <label for="entry-date">거래일시</label><input id="entry-date" type="datetime-local" step="1" required>
+          <label for="entry-date">거래일시 (2026년 기준)</label><input id="entry-date" type="text" inputmode="text" autocomplete="off" maxlength="14" required placeholder="09.25 00:19:21" aria-describedby="date-help">
+          <p id="date-help" style="margin:5px 0 0">월.일 시:분:초 형식으로 직접 입력하세요.</p>
           <label for="entry-type">거래유형</label><select id="entry-type"><option>스마트출금</option><option>스마트입금</option><option>전자금융</option><option>이체</option><option>기타</option></select>
           <label for="entry-name">이름 또는 내용</label><input id="entry-name" type="text" maxlength="40" required placeholder="예: 김현우">
           <label for="entry-amount">거래금액 (입금은 +, 출금은 -)</label><input id="entry-amount" type="number" inputmode="numeric" step="1" required placeholder="예: -30000">
@@ -132,6 +133,15 @@
     let editingId = null;
     const form = document.getElementById('entry-form');
     const money = n => Math.abs(n).toLocaleString('ko-KR') + '원';
+    function parseEntryDate(value) {
+      const match = /^(\d{2})\.(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/.exec(value.trim());
+      if (!match) return null;
+      const [, mm, dd, hh, min, sec] = match;
+      const month = Number(mm), day = Number(dd), hour = Number(hh), minute = Number(min), second = Number(sec);
+      const check = new Date(2026, month - 1, day, hour, minute, second);
+      if (check.getFullYear() !== 2026 || check.getMonth() !== month - 1 || check.getDate() !== day || check.getHours() !== hour || check.getMinutes() !== minute || check.getSeconds() !== second) return null;
+      return `2026-${mm}-${dd}T${hh}:${min}:${sec}`;
+    }
     function renderEntries() {
       const target = document.getElementById('entries');
       target.replaceChildren();
@@ -167,7 +177,7 @@
     }
     function editEntry(item) {
       editingId = item.id;
-      document.getElementById('entry-date').value = item.date;
+      document.getElementById('entry-date').value = item.date.slice(5, 10).replace('-', '.') + ' ' + item.date.slice(11);
       document.getElementById('entry-type').value = item.type;
       document.getElementById('entry-name').value = item.name;
       document.getElementById('entry-amount').value = item.amount;
@@ -181,8 +191,10 @@
       event.preventDefault();
       const amount = Number(document.getElementById('entry-amount').value);
       const balance = Number(document.getElementById('entry-balance').value);
+      const date = parseEntryDate(document.getElementById('entry-date').value);
+      if (!date) { alert('거래일시를 09.25 00:19:21 형식으로 입력해 주세요.'); document.getElementById('entry-date').focus(); return; }
       if (!Number.isSafeInteger(amount) || amount === 0 || !Number.isSafeInteger(balance) || balance < 0) { alert('금액과 잔액을 올바르게 입력해 주세요.'); return; }
-      const item = { id: editingId ?? String(Date.now()), date: document.getElementById('entry-date').value, type: document.getElementById('entry-type').value, name: document.getElementById('entry-name').value.trim(), amount, balance };
+      const item = { id: editingId ?? String(Date.now()), date, type: document.getElementById('entry-type').value, name: document.getElementById('entry-name').value.trim(), amount, balance };
       if (!item.name) return;
       const next = editingId ? entries.map(entry => entry.id === editingId ? item : entry) : [...entries, item];
       const previous = entries; entries = next;
