@@ -20,10 +20,35 @@
     .hotspot { position: absolute; display: block; border: 0; padding: 0; background: transparent; cursor: pointer; touch-action: manipulation; }
     .hotspot:focus-visible { outline: 3px solid #365ee8; outline-offset: -3px; border-radius: 8px; }
     #balance { left: 15%; top: 26%; width: 43%; height: 6%; }
-    #transaction { left: 5%; top: 76%; width: 90%; height: 17%; }
     #confirm { left: 0; top: 90%; width: 100%; height: 10%; }
     #back-home { left: 3%; top: 1%; width: 9%; height: 6%; }
     #close-detail { right: 3%; top: 1%; width: 11%; height: 6%; }
+    .transactions-art { position: relative; width: 100%; aspect-ratio: 1001 / 1538; overflow: hidden; }
+    .transactions-art img { position: absolute; inset: 0; }
+    .list-header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: min(100%, 480px); z-index: 2; display: none; align-items: center; justify-content: space-between; height: 62px; padding: 0 6%; background: #fff; border-bottom: 1px solid #e6e9eb; font-size: 19px; color: #292b2e; }
+    .list-header.visible { display: flex; }
+    .list-header button { border: 0; background: none; padding: 8px 5px; font: inherit; color: inherit; }
+    .list-header .icons { font-size: 25px; letter-spacing: 8px; white-space: nowrap; }
+    .entries { padding: 0 6%; background: #fff; }
+    .entry { position: relative; min-height: 170px; padding: 25px 0 21px; border-bottom: 1px solid #e6e9eb; color: #292b2e; }
+    .entry-main { display: block; width: 100%; padding: 0; border: 0; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+    .entry-meta { color: #747a82; font-size: 16px; white-space: nowrap; }
+    .entry-meta .divider { color: #d7dce0; padding: 0 5px; }
+    .entry-name { display: block; margin-top: 17px; font-size: 21px; font-weight: 700; }
+    .entry-amount { display: block; margin-top: 14px; text-align: right; font-size: 21px; font-weight: 650; }
+    .entry-amount.deposit { color: #287ff3; }
+    .entry-balance { display: block; margin-top: 4px; text-align: right; color: #777e87; font-size: 17px; }
+    .entry-edit { position: absolute; left: 0; bottom: 18px; padding: 4px 8px; border: 1px solid #d5d9dd; border-radius: 5px; background: white; color: #676e75; font-size: 12px; }
+    .editor { padding: 30px 6% 65px; background: #f4f6f8; }
+    .editor h2 { margin: 0 0 8px; font-size: 21px; }
+    .editor p { margin: 0 0 20px; color: #697179; font-size: 13px; }
+    .editor label { display: block; margin: 14px 0 5px; color: #4a5056; font-size: 14px; }
+    .editor input, .editor select { display: block; width: 100%; height: 45px; padding: 8px 12px; border: 1px solid #cbd1d7; border-radius: 7px; background: #fff; color: #26292d; font: inherit; font-size: 16px; }
+    .editor-actions { display: flex; gap: 8px; margin-top: 22px; }
+    .editor-actions button { flex: 1; min-height: 48px; border: 0; border-radius: 7px; background: #ffd43b; color: #242424; font-size: 16px; font-weight: 700; }
+    .editor-actions .secondary { flex: 0 0 80px; background: #e1e5e9; }
+    .editor-actions .danger { background: #f8dddd; color: #8e2525; }
+    .editor [hidden], .screen[hidden] { display: none !important; }
     @media (min-width: 481px) { main { box-shadow: 0 0 30px #0002; } }
   </style>
 </head>
@@ -34,9 +59,24 @@
       <button class="hotspot" id="balance" type="button" aria-label="잔액 211,000원, 거래내역 보기"></button>
     </section>
     <section class="screen" id="transactions-screen" aria-label="거래내역 화면" hidden>
-      <img src="assets/transactions.png" alt="거래내역 목록. 고태호 30,000원 출금" draggable="false">
-      <button class="hotspot" id="back-home" type="button" aria-label="첫 화면으로 돌아가기"></button>
-      <button class="hotspot" id="transaction" type="button" aria-label="고태호 30,000원 거래내역 상세 보기"></button>
+      <div class="transactions-art">
+        <img src="assets/transactions.png" alt="거래내역조회 계좌와 잔액, 조회 설정" draggable="false">
+        <button class="hotspot" id="back-home" type="button" aria-label="첫 화면으로 돌아가기"></button>
+      </div>
+      <div class="list-header"><button id="list-back" type="button" aria-label="첫 화면으로">〈</button><span>거래내역조회</span><span class="icons" aria-hidden="true">⌂ ☰</span></div>
+      <div class="entries" id="entries" aria-label="거래 내역 목록"></div>
+      <div class="editor" id="editor">
+        <h2 id="editor-title">거래내역 입력</h2>
+        <p>저장한 내역은 이 기기의 브라우저에 보관됩니다.</p>
+        <form id="entry-form">
+          <label for="entry-date">거래일시</label><input id="entry-date" type="datetime-local" step="1" required>
+          <label for="entry-type">거래유형</label><select id="entry-type"><option>스마트출금</option><option>스마트입금</option><option>전자금융</option><option>이체</option><option>기타</option></select>
+          <label for="entry-name">이름 또는 내용</label><input id="entry-name" type="text" maxlength="40" required placeholder="예: 김현우">
+          <label for="entry-amount">거래금액 (입금은 +, 출금은 -)</label><input id="entry-amount" type="number" inputmode="numeric" step="1" required placeholder="예: -30000">
+          <label for="entry-balance">거래 후 잔액</label><input id="entry-balance" type="number" inputmode="numeric" min="0" step="1" required placeholder="예: 211000">
+          <div class="editor-actions"><button type="submit">저장</button><button class="secondary" id="cancel-edit" type="button" hidden>취소</button><button class="secondary danger" id="delete-entry" type="button" hidden>삭제</button></div>
+        </form>
+      </div>
     </section>
     <section class="screen" id="detail-screen" aria-label="거래내역상세 화면" hidden>
       <img src="assets/detail.png" alt="고태호 30,000원 출금 거래내역상세" draggable="false">
@@ -58,9 +98,16 @@
       }
       if (updateHistory) history.pushState({ screen: name }, '', '#' + name);
       window.scrollTo(0, 0);
+      requestAnimationFrame(updateStickyHeader);
     }
     document.getElementById('balance').onclick = () => showScreen('transactions');
-    document.getElementById('transaction').onclick = () => showScreen('detail');
+    document.getElementById('list-back').onclick = () => showScreen('home');
+    function updateStickyHeader() {
+      const screen = screens.transactions;
+      const pastTop = screen.getBoundingClientRect().top < -screen.querySelector('.transactions-art').clientHeight + 62;
+      screen.querySelector('.list-header').classList.toggle('visible', !screen.hidden && pastTop);
+    }
+    window.addEventListener('scroll', updateStickyHeader, { passive: true });
     document.getElementById('confirm').onclick = () => showScreen('transactions');
     document.getElementById('close-detail').onclick = () => showScreen('transactions');
     document.getElementById('back-home').onclick = () => showScreen('home');
@@ -68,6 +115,88 @@
       Object.hasOwn(screens, location.hash.slice(1)) ? location.hash.slice(1) : 'home', false
     ));
     showScreen(Object.hasOwn(screens, location.hash.slice(1)) ? location.hash.slice(1) : 'home', false);
+
+    const storageKey = 'kb-ui-demo-entries-v1';
+    const initialEntries = [
+      { id: 'original', date: '2026-09-26T02:11:51', type: '스마트출금', name: '고태호', amount: -30000, balance: 211000 },
+      { id: 'sample-2', date: '2026-09-26T01:12:02', type: '스마트입금', name: '김현우', amount: 11000, balance: 241000 },
+      { id: 'sample-3', date: '2026-09-26T00:56:10', type: '스마트출금', name: '건소정', amount: -12000, balance: 230000 },
+      { id: 'sample-4', date: '2026-09-26T00:55:43', type: '전자금융', name: '홍주', amount: 24000, balance: 242000 },
+      { id: 'sample-5', date: '2026-09-26T00:36:27', type: '스마트출금', name: '고태호', amount: -150000, balance: 218000 }
+    ];
+    let entries;
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey));
+      entries = Array.isArray(saved) ? saved : initialEntries;
+    } catch { entries = initialEntries; }
+    let editingId = null;
+    const form = document.getElementById('entry-form');
+    const money = n => Math.abs(n).toLocaleString('ko-KR') + '원';
+    function renderEntries() {
+      const target = document.getElementById('entries');
+      target.replaceChildren();
+      for (const item of [...entries].sort((a, b) => b.date.localeCompare(a.date))) {
+        const row = document.createElement('article');
+        row.className = 'entry';
+        const main = document.createElement('button');
+        main.className = 'entry-main';
+        main.type = 'button';
+        main.setAttribute('aria-label', `${item.name} ${item.amount < 0 ? '출금' : '입금'} ${money(item.amount)}. ${item.id === 'original' ? '상세 보기' : '수정하기'}`);
+        const meta = document.createElement('span');
+        meta.className = 'entry-meta';
+        const date = item.date.replace('T', ' ');
+        meta.textContent = `${date.slice(5, 10).replace('-', '.')} ${date.slice(11)}  │  ${item.type}`;
+        const name = document.createElement('strong'); name.className = 'entry-name'; name.textContent = item.name;
+        const amount = document.createElement('span'); amount.className = 'entry-amount' + (item.amount > 0 ? ' deposit' : ''); amount.textContent = (item.amount > 0 ? '+' : '-') + money(item.amount);
+        const balance = document.createElement('span'); balance.className = 'entry-balance'; balance.textContent = item.balance.toLocaleString('ko-KR') + '원';
+        main.append(meta, name, amount, balance);
+        main.onclick = () => item.id === 'original' ? showScreen('detail') : editEntry(item);
+        const edit = document.createElement('button'); edit.className = 'entry-edit'; edit.type = 'button'; edit.textContent = '수정'; edit.setAttribute('aria-label', `${item.name} 거래내역 수정`); edit.onclick = () => editEntry(item);
+        row.append(main, edit); target.append(row);
+      }
+    }
+    function persist() {
+      try { localStorage.setItem(storageKey, JSON.stringify(entries)); return true; }
+      catch { alert('이 브라우저에서 저장할 수 없습니다. 저장 공간 또는 Safari 설정을 확인해 주세요.'); return false; }
+    }
+    function resetEditor() {
+      editingId = null; form.reset();
+      document.getElementById('editor-title').textContent = '거래내역 입력';
+      document.getElementById('cancel-edit').hidden = true;
+      document.getElementById('delete-entry').hidden = true;
+    }
+    function editEntry(item) {
+      editingId = item.id;
+      document.getElementById('entry-date').value = item.date;
+      document.getElementById('entry-type').value = item.type;
+      document.getElementById('entry-name').value = item.name;
+      document.getElementById('entry-amount').value = item.amount;
+      document.getElementById('entry-balance').value = item.balance;
+      document.getElementById('editor-title').textContent = '거래내역 수정';
+      document.getElementById('cancel-edit').hidden = false;
+      document.getElementById('delete-entry').hidden = false;
+      document.getElementById('editor').scrollIntoView({ behavior: 'smooth' });
+    }
+    form.onsubmit = event => {
+      event.preventDefault();
+      const amount = Number(document.getElementById('entry-amount').value);
+      const balance = Number(document.getElementById('entry-balance').value);
+      if (!Number.isSafeInteger(amount) || amount === 0 || !Number.isSafeInteger(balance) || balance < 0) { alert('금액과 잔액을 올바르게 입력해 주세요.'); return; }
+      const item = { id: editingId ?? String(Date.now()), date: document.getElementById('entry-date').value, type: document.getElementById('entry-type').value, name: document.getElementById('entry-name').value.trim(), amount, balance };
+      if (!item.name) return;
+      const next = editingId ? entries.map(entry => entry.id === editingId ? item : entry) : [...entries, item];
+      const previous = entries; entries = next;
+      if (!persist()) { entries = previous; return; }
+      renderEntries(); resetEditor(); document.getElementById('entries').scrollIntoView({ behavior: 'smooth' });
+    };
+    document.getElementById('cancel-edit').onclick = resetEditor;
+    document.getElementById('delete-entry').onclick = () => {
+      if (!editingId || !confirm('이 거래내역을 삭제할까요?')) return;
+      const previous = entries; entries = entries.filter(item => item.id !== editingId);
+      if (!persist()) { entries = previous; return; }
+      renderEntries(); resetEditor();
+    };
+    renderEntries();
   </script>
 </body>
 </html>
