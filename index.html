@@ -1,150 +1,349 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <link rel="apple-touch-icon" sizes="1024x1024" href="assets/icon.png">
-  <link rel="icon" type="image/png" href="assets/icon.png">
-  <meta name="theme-color" content="#eef4fa">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="계좌 화면 데모">
-  <title>계좌 화면 데모</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>입출금 내역 및 잔액 명세</title>
   <style>
-    * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; background: #eef4fa; }
-    body { display: flex; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
-    main { width: min(100%, 480px); position: relative; background: white; }
-    .screen { display: none; position: relative; width: 100%; }
-    .screen.active { display: block; }
-    .screen img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
-    .hotspot { position: absolute; display: block; border: 0; padding: 0; background: transparent; cursor: pointer; touch-action: manipulation; }
-    .hotspot:focus-visible { outline: 3px solid #365ee8; outline-offset: -3px; border-radius: 8px; }
-    #balance { left: 15%; top: 26%; width: 43%; height: 6%; }
-    #transfer-open { left: 16%; top: 32.4%; width: 33%; height: 5.4%; }
-    #back-home { left: 3%; top: 1%; width: 9%; height: 6%; }
-    #transfer-back { left: 3%; top: 7%; width: 25%; height: 6%; }
-    #transfer-home { left: 75%; top: 7%; width: 11%; height: 6%; }
-    .transactions-art { position: relative; width: 100%; aspect-ratio: 1001 / 1538; overflow: hidden; }
-    .transactions-art img { position: absolute; inset: 0; }
-    #balance-toggle { left: 82.8%; top: 84.5%; width: 11.8%; height: 3.7%; border-radius: 100px; background: #fff; }
-    #balance-toggle::before { content: ''; display: block; position: absolute; inset: 12% 2%; border-radius: 100px; background: #806f5d; }
-    #balance-toggle::after { content: ''; display: block; position: absolute; top: 2%; right: 1%; width: 52%; height: 96%; border-radius: 50%; background: #fff; border: 1px solid #806f5d; box-shadow: 0 1px 3px #0003; }
-    #balance-toggle[aria-checked="false"]::before { background: #c5c9cc; }
-    #balance-toggle[aria-checked="false"]::after { right: auto; left: 1%; border-color: #aeb3b6; }
-    .balances-hidden .entry-balance { visibility: hidden; }
-    .list-header { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: min(100%, 480px); z-index: 2; display: none; align-items: center; justify-content: space-between; height: 62px; padding: 0 6%; background: #fff; border-bottom: 1px solid #e6e9eb; font-size: 16px; color: #292b2e; }
-    .list-header.visible { display: flex; }
-    .list-header button { border: 0; background: none; padding: 8px 5px; font: inherit; color: inherit; }
-    .list-header .icons { font-size: 22px; letter-spacing: 8px; white-space: nowrap; }
-    .entries { padding: 0 6%; background: #fff; }
-    .month-heading { margin: 0; padding: 22px 0 14px; border-top: 2px solid #6c737a; border-bottom: 1px solid #e6e9eb; font-size: 18px; color: #292b2e; }
-    .entry { min-height: 170px; padding: 25px 0 21px; border-bottom: 1px solid #e6e9eb; color: #292b2e; }
-    .entry-meta { color: #747a82; font-size: 13px; white-space: nowrap; }
-    .entry-meta .divider { color: #d7dce0; padding: 0 5px; }
-    .entry-name { display: block; margin-top: 17px; font-size: 17px; font-weight: 600; }
-    .entry-amount { display: block; margin-top: 14px; text-align: right; font-size: 17px; font-weight: 600; }
-    .entry-amount.deposit { color: #287ff3; }
-    .entry-balance { display: block; margin-top: 4px; text-align: right; color: #777e87; font-size: 14px; }  
-    .screen[hidden] { display: none !important; }
-    @media (min-width: 481px) { main { box-shadow: 0 0 30px #0002; } }
+    :root {
+      --fontStack-monospace: "Monaspace Neon", ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace !important;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: var(--fontStack-monospace);
+    }
+
+    body {
+      background-color: #f6f8fa;
+      color: #24292f;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      background: #ffffff;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(31,35,40,0.12);
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-top: 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #d0d7de;
+      padding-bottom: 8px;
+    }
+
+    .summary-box {
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .summary-item {
+      font-size: 14px;
+    }
+
+    .summary-item span {
+      font-weight: bold;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #hsla(210,18%,87%,1);
+      border-bottom: 1px solid #d8dee4;
+    }
+
+    th {
+      background-color: #f6f8fa;
+      color: #5760 trim;
+      color: #57606a;
+      font-weight: 600;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .deposit {
+      color: #0969da;
+      font-weight: 600;
+    }
+
+    .withdrawal {
+      color: #cf222e;
+      font-weight: 600;
+    }
+
+    .balance {
+      color: #24292f;
+    }
+
+    tr:hover {
+      background-color: #f6f8fa;
+    }
   </style>
 </head>
 <body>
-  <main aria-label="은행 화면 모형">
-    <section class="screen active" id="home-screen" aria-label="첫 화면">
-      <img src="assets/home.png" alt="계좌 카드와 잔액 211,000원" draggable="false">
-      <button class="hotspot" id="balance" type="button" aria-label="잔액 211,000원, 거래내역 보기"></button>
-      <button class="hotspot" id="transfer-open" type="button" aria-label="이체 화면 보기"></button>
-    </section>
-    <section class="screen" id="transactions-screen" aria-label="거래내역 화면" hidden>
-      <div class="transactions-art">
-        <img src="assets/transactions.png" alt="거래내역조회 계좌와 잔액, 조회 설정" draggable="false">
-        <button class="hotspot" id="back-home" type="button" aria-label="첫 화면으로 돌아가기"></button>
-        <button class="hotspot" id="balance-toggle" type="button" role="switch" aria-label="거래별 잔액표기" aria-checked="true"></button>
-      </div>
-      <div class="list-header"><button id="list-back" type="button" aria-label="첫 화면으로">〈</button><span>거래내역조회</span><span class="icons" aria-hidden="true">⌂ ☰</span></div>
-      <div class="entries" id="entries" aria-label="거래 내역 목록"></div>
-    </section>
-    <section class="screen" id="transfer-screen" aria-label="이체 화면" hidden>
-      <img src="assets/transfer.png" alt="이체 화면과 최근 계좌 목록" draggable="false">
-      <button class="hotspot" id="transfer-back" type="button" aria-label="메인 화면으로 돌아가기"></button>
-      <button class="hotspot" id="transfer-home" type="button" aria-label="홈으로 돌아가기"></button>
-    </section>
-  </main>
-  <script>
-    const screens = {
-      home: document.getElementById('home-screen'),
-      transactions: document.getElementById('transactions-screen'),
-      transfer: document.getElementById('transfer-screen')
-    };
-    function showScreen(name, updateHistory = true) {
-      for (const [key, screen] of Object.entries(screens)) {
-        const active = key === name;
-        screen.hidden = !active;
-        screen.classList.toggle('active', active);
-      }
-      if (updateHistory) history.pushState({ screen: name }, '', '#' + name);
-      window.scrollTo(0, 0);
-      requestAnimationFrame(updateStickyHeader);
-    }
-    document.getElementById('balance').onclick = () => showScreen('transactions');
-    document.getElementById('transfer-open').onclick = () => showScreen('transfer');
-    document.getElementById('transfer-back').onclick = () => showScreen('home');
-    document.getElementById('transfer-home').onclick = () => showScreen('home');
-    document.getElementById('list-back').onclick = () => showScreen('home');
-    const balanceToggle = document.getElementById('balance-toggle');
-    balanceToggle.onclick = () => {
-      const visible = balanceToggle.getAttribute('aria-checked') !== 'true';
-      balanceToggle.setAttribute('aria-checked', String(visible));
-      screens.transactions.classList.toggle('balances-hidden', !visible);
-    };
-    function updateStickyHeader() {
-      const screen = screens.transactions;
-      const pastTop = screen.getBoundingClientRect().top < -screen.querySelector('.transactions-art').clientHeight + 62;
-      screen.querySelector('.list-header').classList.toggle('visible', !screen.hidden && pastTop);
-    }
-    window.addEventListener('scroll', updateStickyHeader, { passive: true });
-    document.getElementById('back-home').onclick = () => showScreen('home');
-    window.addEventListener('popstate', () => showScreen(
-      Object.hasOwn(screens, location.hash.slice(1)) ? location.hash.slice(1) : 'home', false
-    ));
-    showScreen(Object.hasOwn(screens, location.hash.slice(1)) ? location.hash.slice(1) : 'home', false);
 
-    // Personal reconstruction from screenshots; omitted transfers are not part of this list.
-    const entries = [{"date":"09.26 01:12:02","type":"스마트입금","name":"김현우","amount":11000,"balance":211000},{"date":"09.26 00:56:10","type":"스마트출금","name":"건소정","amount":-12000,"balance":200000},{"date":"09.26 00:55:43","type":"전자금융","name":"홍주","amount":24000,"balance":212000},{"date":"09.26 00:28:08","type":"전자금융","name":"장동현","amount":12000,"balance":188000},{"date":"09.26 00:24:36","type":"스마트출금","name":"유정석","amount":-12000,"balance":176000},{"date":"09.26 00:24:05","type":"스마트입금","name":"소주","amount":12000,"balance":188000},{"date":"09.26 00:19:48","type":"전자금융","name":"뎅","amount":24000,"balance":176000},{"date":"09.25 23:20:11","type":"전자금융","name":"박종훈","amount":14000,"balance":152000},{"date":"09.25 22:52:27","type":"전자금융","name":"콘","amount":16000,"balance":138000},{"date":"09.25 22:47:56","type":"자동입금","name":"김태혁","amount":16000,"balance":122000},{"date":"09.25 22:12:36","type":"자동입금","name":"김태혁","amount":16000,"balance":106000},{"date":"09.25 21:30:40","type":"전자금융","name":"유승민","amount":30000,"balance":90000},{"date":"09.25 20:57:24","type":"전자금융","name":"권동원","amount":30000,"balance":60000},{"date":"09.25 20:39:58","type":"전자금융","name":"유승민","amount":30000,"balance":30000},{"date":"09.24 07:11:49","type":"자동출금","name":"쿠팡","amount":-100000,"balance":0},{"date":"09.24 07:11:38","type":"오픈뱅킹","name":"고태호","amount":100000,"balance":100000},{"date":"09.24 05:37:11","type":"오픈뱅킹","name":"카뱅오픈고태호","amount":-100000,"balance":0},{"date":"09.24 05:30:54","type":"오픈뱅킹","name":"고태호","amount":100000,"balance":100000},{"date":"09.21 11:04:09","type":"오픈뱅킹","name":"카뱅오픈고태호","amount":-53000,"balance":0},{"date":"09.20 18:21:11","type":"전자금융","name":"오민성","amount":53000,"balance":53000},{"date":"09.20 16:08:30","type":"오픈뱅킹","name":"카뱅오픈고태호","amount":-30000,"balance":0},{"date":"09.20 12:23:32","type":"전자금융","name":"정해원","amount":30000,"balance":30000},{"date":"09.19 14:44:48","type":"스마트출금","name":"고태호","amount":-135000,"balance":0},{"date":"09.19 02:12:47","type":"자동입금","name":"고태호","amount":80000,"balance":135000},{"date":"09.19 02:02:43","type":"전자금융","name":"김성균","amount":10000,"balance":55000},{"date":"09.19 02:00:40","type":"스마트출금","name":"박선용","amount":-10000,"balance":45000},{"date":"09.19 01:58:55","type":"스마트출금","name":"김우중","amount":-10000,"balance":55000},{"date":"09.19 01:29:40","type":"스마트출금","name":"손철보","amount":-10000,"balance":65000},{"date":"09.19 01:22:57","type":"자동출금","name":"쿠팡","amount":-100000,"balance":75000},{"date":"09.19 01:04:15","type":"전자금융","name":"김정환","amount":8000,"balance":175000},{"date":"09.19 00:14:54","type":"오픈뱅킹","name":"카뱅오픈고태호","amount":-33000,"balance":167000},{"date":"09.18 23:46:00","type":"전자금융","name":"유승민","amount":9000,"balance":200000},{"date":"09.18 23:38:47","type":"전자금융","name":"유승민","amount":8000,"balance":191000},{"date":"09.18 23:08:08","type":"자동입금","name":"조찬양","amount":33000,"balance":183000},{"date":"09.18 22:46:38","type":"전자금융","name":"유승민","amount":10000,"balance":150000},{"date":"09.18 21:19:29","type":"전자금융","name":"유승민","amount":20000,"balance":140000},{"date":"09.18 21:05:14","type":"전자금융","name":"유승민","amount":30000,"balance":120000},{"date":"09.18 20:47:20","type":"전자금융","name":"신상원","amount":30000,"balance":90000},{"date":"09.18 20:32:20","type":"전자금융","name":"유승민","amount":30000,"balance":60000},{"date":"09.18 20:20:12","type":"전자금융","name":"무신","amount":30000,"balance":30000},{"date":"09.18 11:29:05","type":"오픈뱅킹","name":"카뱅오픈고태호","amount":-25000,"balance":0},{"date":"09.17 19:14:40","type":"전자금융","name":"당근마켓 링퍼","amount":25000,"balance":25000},{"date":"09.15 20:17:09","type":"오픈뱅킹","name":"카뱅오픈고태호","amount":-20001,"balance":0},{"date":"09.15 09:48:35","type":"전자금융","name":"고태호","amount":20000,"balance":20001},{"date":"09.12 22:22:06","type":"스마트출금","name":"고태호","amount":-400000,"balance":1},{"date":"09.12 22:21:17","type":"전자금융","name":"고태호","amount":400000,"balance":400001},{"date":"09.12 22:17:53","type":"스마트출금","name":"고태호","amount":-200000,"balance":1},{"date":"09.12 시각 미확인","type":"전자금융","name":"KPS8976","amount":1,"balance":200001},{"date":"09.12 22:16:24","type":"전자금융","name":"고태호","amount":200000,"balance":200000},{"date":"09.04 08:10:21","type":"오픈뱅킹","name":"카뱅오픈고태호","amount":-37400,"balance":0},{"date":"09.01 18:13:27","type":"국민카드","name":"KB카드출금","amount":-300,"balance":37400},{"date":"09.01 11:14:24","type":"전자금융","name":"냉방비지원 (8월)","amount":37700,"balance":37700},{"date":"08.26 08:57:40","type":"자동출금","name":"쿠팡","amount":-100000,"balance":0},{"date":"08.26 08:57:08","type":"오픈뱅킹","name":"고태호","amount":100000,"balance":100000},{"date":"08.10 19:00:37","type":"자동출금","name":"우리캐011","amount":-1,"balance":0},{"date":"08.01 00:05:00","type":"자동출금","name":"쿠팡","amount":-100000,"balance":1},{"date":"08.01 00:04:14","type":"스마트입금","name":"고태호","amount":100000,"balance":100001},{"date":"07.22 04:20:02","type":"오픈뱅킹","name":"카뱅오픈고태호","amount":-200000,"balance":1},{"date":"07.22 04:03:19","type":"전자금융","name":"(주) 신우엠디_","amount":200000,"balance":200001},{"date":"07.22 03:41:37","type":"스마트출금","name":"고태호","amount":-100000,"balance":1},{"date":"07.22 03:34:37","type":"스마트입금","name":"고태호","amount":100000,"balance":100001},{"date":"07.22 03:31:57","type":"스마트출금","name":"고태호","amount":-50000,"balance":1},{"date":"07.22 03:31:13","type":"전자금융","name":"고태호","amount":50000,"balance":50001},{"date":"07.22 03:29:12","type":"전자금융","name":"KPS0612","amount":1,"balance":1},{"date":"07.21 02:46:10","type":"오픈뱅킹","name":"카뱅오픈고태호","amount":-600417,"balance":0},{"date":"07.21 02:42:34","type":"전자금융","name":"(주) 신우엠디_","amount":400000,"balance":600417},{"date":"07.21 02:34:41","type":"전자금융","name":"카뱅오픈환불","amount":200000,"balance":200417},{"date":"07.21 02:32:20","type":"스마트출금","name":"고태호","amount":-200000,"balance":417},{"date":"07.21 02:31:37","type":"스마트입금","name":"고태호","amount":200000,"balance":200417},{"date":"07.21 02:28:39","type":"오픈뱅킹","name":"카뱅오픈고태호","amount":-200000,"balance":417},{"date":"07.21 02:28:08","type":"전자금융","name":"고태호","amount":200000,"balance":200417},{"date":"07.21 02:21:17","type":"스마트출금","name":"고태호","amount":-100000,"balance":417},{"date":"07.21 02:20:42","type":"전자금융","name":"고태호","amount":100000,"balance":100417},{"date":"07.21 02:16:01","type":"전자금융","name":"KPS1675","amount":1,"balance":417},{"date":"07.20 18:19:49","type":"국민카드","name":"KB카드출금","amount":-190,"balance":416},{"date":"07.16 12:30:03","type":"자동출금","name":"쿠팡","amount":-100000,"balance":606},{"date":"07.16 12:28:13","type":"전자금융","name":"고태호","amount":100000,"balance":100606},{"date":"07.12 00:56:27","type":"스마트출금","name":"고태호","amount":-340000,"balance":606},{"date":"07.12 00:54:00","type":"오픈뱅킹","name":"고태호","amount":311000,"balance":340606},{"date":"07.12 00:53:33","type":"전자금융","name":"고태호","amount":20000,"balance":29606},{"date":"07.12 00:45:36","type":"스마트출금","name":"고태호","amount":-200000,"balance":9606},{"date":"07.12 00:39:14","type":"전자금융","name":"고태호","amount":200000,"balance":209606},{"date":"07.12 00:38:26","type":"전자금융","name":"KPS4432","amount":1,"balance":9606},{"date":"07.10 08:47:13","type":"전자금융","name":"우리캐피탈","amount":9605,"balance":9605}];
-    const money = n => Math.abs(n).toLocaleString('ko-KR') + '원';
-    function renderEntries() {
-      const target = document.getElementById('entries');
-      target.replaceChildren();
-      let month = '09'; // The screenshot header above the first row already shows 2026.09.
-      for (const item of entries) {
-        const itemMonth = item.date.slice(0, 2);
-        if (itemMonth !== month) {
-          month = itemMonth;
-          const heading = document.createElement('h2');
-          heading.className = 'month-heading';
-          heading.textContent = '2026.' + month;
-          target.append(heading);
-        }
-        const row = document.createElement('article');
-        row.className = 'entry';
-        const meta = document.createElement('span');
-        meta.className = 'entry-meta';
-        meta.textContent = item.date + '  │  ' + item.type;
-        const name = document.createElement('strong');
-        name.className = 'entry-name';
-        name.textContent = item.name;
-        const amount = document.createElement('span');
-        amount.className = 'entry-amount' + (item.amount > 0 ? ' deposit' : '');
-        amount.textContent = (item.amount > 0 ? '+' : '-') + money(item.amount);
-        const balance = document.createElement('span');
-        balance.className = 'entry-balance';
-        balance.textContent = item.balance.toLocaleString('ko-KR') + '원';
-        row.append(meta, name, amount, balance);
-        target.append(row);
-      }
-    }
-    renderEntries();
-  </script>
+<div class="container">
+  <h1>입출금 내역 및 잔액 조회</h1>
+
+  <div class="summary-box">
+    <div class="summary-item">총 입금: <span class="deposit">+900,701원</span></div>
+    <div class="summary-item">총 출금: <span class="withdrawal">-992,702원</span></div>
+    <div class="summary-item">기간 순변동: <span class="withdrawal">-92,001원</span></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>거래일시</th>
+        <th>거래처</th>
+        <th class="text-right">거래금액</th>
+        <th class="text-right">남은잔액</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>2026.10.03 03:21:59</td>
+        <td>계경환</td>
+        <td class="text-right withdrawal">-10,000원</td>
+        <td class="text-right balance">-92,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.03 02:36:51</td>
+        <td>정현재</td>
+        <td class="text-right withdrawal">-12,000원</td>
+        <td class="text-right balance">-82,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.03 02:03:20</td>
+        <td>이우성</td>
+        <td class="text-right withdrawal">-8,000원</td>
+        <td class="text-right balance">-70,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.03 01:28:08</td>
+        <td>경규원</td>
+        <td class="text-right withdrawal">-11,000원</td>
+        <td class="text-right balance">-62,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.03 01:14:26</td>
+        <td>정진형</td>
+        <td class="text-right withdrawal">-12,000원</td>
+        <td class="text-right balance">-51,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.03 01:13:38</td>
+        <td>최명수</td>
+        <td class="text-right deposit">+24,000원</td>
+        <td class="text-right balance">-39,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.03 00:59:32</td>
+        <td>안재철</td>
+        <td class="text-right deposit">+24,000원</td>
+        <td class="text-right balance">-63,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.03 00:27:11</td>
+        <td>디올</td>
+        <td class="text-right deposit">+26,000원</td>
+        <td class="text-right balance">-87,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 22:39:00</td>
+        <td>김태혁</td>
+        <td class="text-right deposit">+20,000원</td>
+        <td class="text-right balance">-113,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 22:02:18</td>
+        <td>해기</td>
+        <td class="text-right deposit">+20,000원</td>
+        <td class="text-right balance">-133,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 21:57:26</td>
+        <td>위고비</td>
+        <td class="text-right deposit">+20,000원</td>
+        <td class="text-right balance">-153,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 21:24:39</td>
+        <td>장정욱</td>
+        <td class="text-right withdrawal">-26,000원</td>
+        <td class="text-right balance">-173,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 21:22:07</td>
+        <td>파대</td>
+        <td class="text-right deposit">+13,000원</td>
+        <td class="text-right balance">-147,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 20:50:54</td>
+        <td>장준수</td>
+        <td class="text-right deposit">+12,000원</td>
+        <td class="text-right balance">-160,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 20:30:05</td>
+        <td>김용석</td>
+        <td class="text-right withdrawal">-30,000원</td>
+        <td class="text-right balance">-172,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 20:21:24</td>
+        <td>유승민</td>
+        <td class="text-right deposit">+30,000원</td>
+        <td class="text-right balance">-142,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 20:04:52</td>
+        <td>커즈</td>
+        <td class="text-right deposit">+30,000원</td>
+        <td class="text-right balance">-172,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 19:44:26</td>
+        <td>황</td>
+        <td class="text-right deposit">+30,000원</td>
+        <td class="text-right balance">-202,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 19:43:26</td>
+        <td>이성현</td>
+        <td class="text-right deposit">+30,000원</td>
+        <td class="text-right balance">-232,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 12:31:25</td>
+        <td>쿠팡</td>
+        <td class="text-right withdrawal">-100,000원</td>
+        <td class="text-right balance">-262,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 05:57:17</td>
+        <td>고태호</td>
+        <td class="text-right deposit">+100,000원</td>
+        <td class="text-right balance">-162,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 04:42:34</td>
+        <td>고태호</td>
+        <td class="text-right withdrawal">-50,000원</td>
+        <td class="text-right balance">-262,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 03:35:53</td>
+        <td>고태호</td>
+        <td class="text-right withdrawal">-100,000원</td>
+        <td class="text-right balance">-212,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 03:33:05</td>
+        <td>고태호</td>
+        <td class="text-right deposit">+100,000원</td>
+        <td class="text-right balance">-112,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 03:12:14</td>
+        <td>고태호</td>
+        <td class="text-right withdrawal">-50,000원</td>
+        <td class="text-right balance">-212,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 03:11:28</td>
+        <td>고태호</td>
+        <td class="text-right deposit">+50,000원</td>
+        <td class="text-right balance">-162,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.02 03:10:41</td>
+        <td>KPS4344</td>
+        <td class="text-right deposit">+1원</td>
+        <td class="text-right balance">-212,001원</td>
+      </tr>
+      <tr>
+        <td>2026.10.01 23:19:50</td>
+        <td>카뱅오픈고태호</td>
+        <td class="text-right withdrawal">-270,402원</td>
+        <td class="text-right balance">-212,002원</td>
+      </tr>
+      <tr>
+        <td>2026.10.01 23:15:05</td>
+        <td>고태호</td>
+        <td class="text-right deposit">+270,000원</td>
+        <td class="text-right balance">+58,400원</td>
+      </tr>
+      <tr>
+        <td>2026.10.01 23:03:24</td>
+        <td>카뱅오픈고태호</td>
+        <td class="text-right withdrawal">-50,000원</td>
+        <td class="text-right balance">-211,600원</td>
+      </tr>
+      <tr>
+        <td>2026.10.01 23:01:53</td>
+        <td>카뱅오픈환불</td>
+        <td class="text-right deposit">+50,000원</td>
+        <td class="text-right balance">-161,600원</td>
+      </tr>
+      <tr>
+        <td>2026.10.01 22:55:51</td>
+        <td>카뱅오픈고태호</td>
+        <td class="text-right withdrawal">-50,000원</td>
+        <td class="text-right balance">-211,600원</td>
+      </tr>
+      <tr>
+        <td>2026.10.01 22:55:21</td>
+        <td>고태호</td>
+        <td class="text-right deposit">+13,000원</td>
+        <td class="text-right balance">-161,600원</td>
+      </tr>
+      <tr>
+        <td>2026.09.30 18:04:48</td>
+        <td>KB카드출금</td>
+        <td class="text-right withdrawal">-300원</td>
+        <td class="text-right balance">-174,600원</td>
+      </tr>
+      <tr>
+        <td>2026.09.30 10:58:37</td>
+        <td>냉방비 지원 (9월)</td>
+        <td class="text-right deposit">+37,700원</td>
+        <td class="text-right balance">-174,300원</td>
+      </tr>
+      <tr>
+        <td>2026.09.26 12:20:47</td>
+        <td>카뱅오픈고태호</td>
+        <td class="text-right withdrawal">-211,000원</td>
+        <td class="text-right balance">-211,000원</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
 </body>
 </html>
